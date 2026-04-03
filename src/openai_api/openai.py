@@ -5,6 +5,57 @@ import numpy as np
 import requests
 from openai import OpenAI
 
+# ─── MiniMax provider auto-detection ───────────────────────────────────────────
+# Set LLM_PROVIDER=minimax  OR  set MINIMAX_API_KEY (without OPENAI_API_KEY) to
+# automatically route all LLM calls through MiniMax's OpenAI-compatible endpoint.
+#
+# MiniMax OpenAI-compatible base URL: https://api.minimax.io/v1
+# Supported models (204K context):
+#   MiniMax-M2.7          – flagship reasoning model
+#   MiniMax-M2.7-highspeed – fast, cost-efficient variant
+#   MiniMax-M2.5          – previous generation
+#   MiniMax-M2.5-highspeed – previous generation fast variant
+#
+# Temperature note: MiniMax requires temperature in (0.0, 1.0].  The helper
+# _clamp_temperature() enforces this; pass any float through it before sending.
+# ─────────────────────────────────────────────────────────────────────────────────
+
+_MINIMAX_API_BASE = "api.minimax.io"
+
+
+def _init_llm_config() -> None:
+    """Auto-configure the runtime to use MiniMax when requested.
+
+    Triggers when either:
+    - ``LLM_PROVIDER=minimax`` is set, or
+    - ``MINIMAX_API_KEY`` is set and ``OPENAI_API_KEY`` is absent.
+
+    Writes ``OPENAI_API_BASE`` and ``OPENAI_API_KEY`` into the process
+    environment so that all existing API helpers pick them up transparently.
+    """
+    provider = os.environ.get("LLM_PROVIDER", "").strip().lower()
+    minimax_key = os.environ.get("MINIMAX_API_KEY", "").strip()
+    openai_key = os.environ.get("OPENAI_API_KEY", "").strip()
+
+    use_minimax = provider == "minimax" or (minimax_key and not openai_key)
+    if use_minimax and minimax_key:
+        os.environ.setdefault("OPENAI_API_BASE", _MINIMAX_API_BASE)
+        os.environ["OPENAI_API_KEY"] = minimax_key
+
+
+_init_llm_config()
+
+
+def _clamp_temperature(temp: float) -> float:
+    """Clamp temperature to MiniMax-compatible range (0.01, 1.0].
+
+    MiniMax rejects temperature == 0.0; the lower bound is nudged to 0.01.
+    This is a no-op for any value already in range and for non-MiniMax
+    providers where the extra clamping is harmless.
+    """
+    return max(0.01, min(1.0, float(temp)))
+
+
 # 全局模型配置缓存
 _model_config = None
 

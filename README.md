@@ -241,6 +241,52 @@ Based on actual configuration in `src/openai_api/model_config.json`:
 }
 ```
 
+### 🌐 Using MiniMax as LLM Provider
+
+[MiniMax](https://platform.minimax.io) offers an OpenAI-compatible API and works as a drop-in LLM backend for Finite Monkey Engine. All models feature a **204K context window**, making them well-suited for large smart-contract codebases.
+
+**Supported MiniMax models:**
+
+| Model | Context | Best for |
+|---|---|---|
+| `MiniMax-M2.7` | 204K | Flagship — vulnerability detection & reasoning |
+| `MiniMax-M2.7-highspeed` | 204K | Fast JSON extraction & summarization |
+| `MiniMax-M2.5` | 204K | Previous generation |
+| `MiniMax-M2.5-highspeed` | 204K | Previous generation fast variant |
+
+**Quick setup — two options:**
+
+Option A: set `LLM_PROVIDER=minimax` and `MINIMAX_API_KEY`:
+```bash
+LLM_PROVIDER=minimax
+MINIMAX_API_KEY=your-minimax-api-key
+```
+
+Option B: set only `MINIMAX_API_KEY` (auto-detected when `OPENAI_API_KEY` is absent):
+```bash
+MINIMAX_API_KEY=your-minimax-api-key
+```
+
+Then update `src/openai_api/model_config.json` to use MiniMax model names:
+```json
+{
+  "openai_general": "MiniMax-M2.7",
+  "code_assumptions_analysis": "MiniMax-M2.7",
+  "vulnerability_detection": "MiniMax-M2.7",
+  "group_results_summarization": "MiniMax-M2.7",
+  "initial_vulnerability_validation": "MiniMax-M2.7",
+  "vulnerability_findings_json_extraction": "MiniMax-M2.7-highspeed",
+  "additional_context_determination": "MiniMax-M2.7",
+  "comprehensive_vulnerability_analysis": "MiniMax-M2.7",
+  "final_vulnerability_extraction": "MiniMax-M2.7-highspeed",
+  "structured_json_extraction": "MiniMax-M2.7-highspeed",
+  "embedding_model": "text-embedding-3-large"
+}
+```
+
+> 💡 **Temperature note**: MiniMax requires temperature in the range `(0.0, 1.0]`.
+> The built-in `_clamp_temperature()` helper enforces this automatically.
+
 ### Recommended Configuration Schemes
 
 #### 🚀 Quick Start (Small projects < 50 files)
@@ -332,6 +378,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - **Claude AI**: For advanced code understanding
 - **Mermaid**: For business flow visualization
 - **OpenAI**: For AI-powered analysis capabilities
+- **MiniMax**: For OpenAI-compatible LLM API with large context windows
 
 ## 📞 Contact
 
